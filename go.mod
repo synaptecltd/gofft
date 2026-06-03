@@ -1,3 +1,3 @@
-module github.com/10d9e/gofft
+module github.com/synaptecltd/gofft
 
-go 1.22.0
+go 1.24.0
