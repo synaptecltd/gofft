@@ -99,7 +99,7 @@ func (r *Raders) processOne(buffer, scratch []complex128) {
 	// Reorder buffer[1:] into scratch using primitive root
 	// scratch[k] = buffer[g^k mod p]
 	idx := 1
-	for i := 0; i < innerLen; i++ {
+	for i := range innerLen {
 		idx = (idx * r.primitiveRoot) % r.length
 		innerScratch[i] = buffer[idx]
 	}
@@ -124,7 +124,7 @@ func (r *Raders) processOne(buffer, scratch []complex128) {
 	// Reorder output using inverse primitive root
 	// buffer[g^(-k) mod p] = conj(scratch[k])
 	idx = 1
-	for i := 0; i < innerLen; i++ {
+	for i := range innerLen {
 		idx = (idx * r.primitiveRootInv) % r.length
 		buffer[idx] = complexConj(innerScratch[i])
 	}

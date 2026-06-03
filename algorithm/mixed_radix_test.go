@@ -1,6 +1,7 @@
 package algorithm
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -22,7 +23,7 @@ func TestMixedRadixCorrectness(t *testing.T) {
 
 	for _, tc := range testCases {
 		n := tc.n1 * tc.n2
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create MixedRadix
 			width := NewDft(tc.n1, Forward)
 			height := NewDft(tc.n2, Forward)
@@ -84,7 +85,7 @@ func TestMixedRadixRoundTrip(t *testing.T) {
 
 	for _, tc := range testCases {
 		n := tc.n1 * tc.n2
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create forward and inverse
 			widthFwd := NewDft(tc.n1, Forward)
 			heightFwd := NewDft(tc.n2, Forward)

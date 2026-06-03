@@ -55,9 +55,9 @@ func (b *Butterfly11) performFft(buffer []complex128) {
 	// TODO: Implement optimized version with symmetry
 	temp := make([]complex128, 11)
 	copy(temp, buffer)
-	for k := 0; k < 11; k++ {
+	for k := range 11 {
 		sum := complex(0, 0)
-		for j := 0; j < 11; j++ {
+		for j := range 11 {
 			angle := -2.0 * math.Pi * float64(k*j) / 11.0
 			if b.direction == Inverse {
 				angle = -angle
@@ -126,9 +126,9 @@ func (b *Butterfly13) performFft(buffer []complex128) {
 	// TODO: Implement optimized version with symmetry
 	temp := make([]complex128, 13)
 	copy(temp, buffer)
-	for k := 0; k < 13; k++ {
+	for k := range 13 {
 		sum := complex(0, 0)
-		for j := 0; j < 13; j++ {
+		for j := range 13 {
 			angle := -2.0 * math.Pi * float64(k*j) / 13.0
 			if b.direction == Inverse {
 				angle = -angle

@@ -1,6 +1,7 @@
 package gofft
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -40,7 +41,7 @@ func TestRadixNIntegration(t *testing.T) {
 	planner := NewPlanner()
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create input
 			input := make([]complex128, n)
 			for i := range input {

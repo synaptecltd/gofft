@@ -32,6 +32,7 @@ type RadixN struct {
 	butterflies      []FftInterface    // Butterfly for each factor
 	twiddles         []complex128      // All twiddle factors
 	inplaceScratch   int
+	crossFftChunk    []complex128 // Reusable chunk buffer (max radix 7)
 }
 
 // NewRadixN creates a RadixN FFT instance
@@ -99,7 +100,7 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 		crossFftLen *= int(factor)
 
 		// Twiddles for this layer
-		for i := 0; i < crossFftColumns; i++ {
+		for i := range crossFftColumns {
 			for k := 1; k < int(factor); k++ {
 				angle := -2.0 * math.Pi * float64(i*k) / float64(crossFftLen)
 				if direction == Inverse {
@@ -111,11 +112,21 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 		}
 	}
 
-	// Calculate scratch space
+	// Calculate scratch space needed for base FFT and butterflies
 	baseScratch := baseFft.InplaceScratchLen()
+	maxButterflyScratch := 0
+	for _, b := range butterflies {
+		if s := b.InplaceScratchLen(); s > maxButterflyScratch {
+			maxButterflyScratch = s
+		}
+	}
+
 	inplaceScratch := length
 	if baseScratch > length {
 		inplaceScratch = length + baseScratch
+	}
+	if maxButterflyScratch > inplaceScratch-length {
+		inplaceScratch = length + maxButterflyScratch
 	}
 
 	return &RadixN{
@@ -128,6 +139,7 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 		butterflies:      butterflies,
 		twiddles:         twiddles,
 		inplaceScratch:   inplaceScratch,
+		crossFftChunk:    make([]complex128, 7), // Max radix is 7
 	}
 }
 
@@ -161,6 +173,9 @@ func (r *RadixN) processOne(buffer, scratch []complex128) {
 	crossFftLen := r.baseLen
 	twiddleOffset := 0
 
+	// Use pre-allocated buffers for cross-FFT (zero allocations)
+	crossFftScratch := scratch[r.length:r.InplaceScratchLen()] // Use provided scratch
+
 	for i, butterfly := range r.butterflies {
 		radix := int(r.factors[i])
 		crossFftColumns := crossFftLen
@@ -169,9 +184,13 @@ func (r *RadixN) processOne(buffer, scratch []complex128) {
 		// Apply cross-FFT butterflies on chunks
 		layerTwiddles := r.twiddles[twiddleOffset : twiddleOffset+crossFftColumns*(radix-1)]
 
+		// Use pre-allocated scratch with proper length
+		butterflyRequiredLen := butterfly.InplaceScratchLen()
+		butterflyScratch := crossFftScratch[:butterflyRequiredLen]
+
 		for chunkStart := 0; chunkStart < r.length; chunkStart += crossFftLen {
 			chunk := output[chunkStart : chunkStart+crossFftLen]
-			applyCrossFft(chunk, layerTwiddles, crossFftColumns, radix, butterfly)
+			applyCrossFft(chunk, layerTwiddles, crossFftColumns, radix, butterfly, r.crossFftChunk[:radix], butterflyScratch)
 		}
 
 		twiddleOffset += crossFftColumns * (radix - 1)
@@ -187,9 +206,9 @@ func factorTranspose(height int, input, output []complex128, factors []Transpose
 	width := len(input) / height
 
 	// Simple transpose with remainder reversal
-	for x := 0; x < width; x++ {
+	for x := range width {
 		xRev := reverseRemainders(x, factors)
-		for y := 0; y < height; y++ {
+		for y := range height {
 			inputIdx := x + y*width
 			outputIdx := y + xRev*height
 			output[outputIdx] = input[inputIdx]
@@ -215,12 +234,10 @@ func reverseRemainders(value int, factors []TransposeFactor) int {
 
 // applyCrossFft applies a cross-FFT butterfly with twiddles
 // This performs radix-point butterflies on strided data
-func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int, butterfly FftInterface) {
+// Reuses pre-allocated chunk and scratch buffers to avoid per-iteration allocations.
+func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int, butterfly FftInterface, chunk, scratch []complex128) {
 	// For each column
-	for col := 0; col < columns; col++ {
-		// Extract radix elements (strided by columns)
-		chunk := make([]complex128, radix)
-
+	for col := range columns {
 		// First element (no twiddle)
 		chunk[0] = data[col]
 
@@ -233,11 +250,10 @@ func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int,
 		}
 
 		// Apply butterfly
-		scratch := make([]complex128, butterfly.InplaceScratchLen())
 		butterfly.ProcessWithScratch(chunk, scratch)
 
 		// Write back
-		for r := 0; r < radix; r++ {
+		for r := range radix {
 			idx := col + r*columns
 			data[idx] = chunk[r]
 		}

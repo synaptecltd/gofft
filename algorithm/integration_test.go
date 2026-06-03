@@ -1,6 +1,7 @@
 package algorithm
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -8,7 +9,7 @@ import (
 // TestAllSizesUpTo100 tests FFT correctness for all sizes up to 100
 func TestAllSizesUpTo100(t *testing.T) {
 	for n := 2; n <= 100; n++ {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create appropriate FFT
 			var fft FftInterface
 			switch n {
@@ -99,7 +100,7 @@ func TestPowerOfTwoSizes(t *testing.T) {
 	sizes := []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096}
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Use Radix4 for sizes >= 64
 			var fft FftInterface
 			if n >= 64 {

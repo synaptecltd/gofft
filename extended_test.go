@@ -1,6 +1,7 @@
 package gofft
 
 import (
+	"fmt"
 	"math"
 	"math/cmplx"
 	"testing"
@@ -11,7 +12,7 @@ func TestExtendedPowerOfTwoSizes(t *testing.T) {
 	sizes := []int{128, 256, 512, 1024, 2048, 4096}
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create test signal
 			input := make([]complex128, n)
 			for i := range input {
@@ -58,7 +59,7 @@ func BenchmarkFFTExtended(b *testing.B) {
 	sizes := []int{1024, 4096, 16384, 65536}
 
 	for _, n := range sizes {
-		b.Run("Size"+string(rune(n+'0')), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Size %d", n), func(b *testing.B) {
 			planner := NewPlanner()
 			fft := planner.PlanForward(n)
 			buffer := make([]complex128, n)

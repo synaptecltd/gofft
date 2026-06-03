@@ -1,6 +1,7 @@
 package gofft
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -12,7 +13,7 @@ func TestRadersIntegration(t *testing.T) {
 	planner := NewPlanner()
 
 	for _, p := range primes {
-		t.Run("Prime"+string(rune(p+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Prime %d", p), func(t *testing.T) {
 			// Create input
 			input := make([]complex128, p)
 			for i := range input {
@@ -75,7 +76,7 @@ func TestPlannerAlgorithmSelection(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run("Size"+string(rune(tc.size+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", tc.size), func(t *testing.T) {
 			fft := planner.PlanForward(tc.size)
 
 			// Just verify it works (we can't easily check the algorithm type)

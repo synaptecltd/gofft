@@ -1,3 +1,7 @@
-module github.com/10d9e/gofft
+module github.com/synaptecltd/gofft
 
-go 1.22.0
+replace github.com/10d9e/gofft => ./
+
+go 1.24.0
+
+require github.com/10d9e/gofft v0.0.0-00010101000000-000000000000

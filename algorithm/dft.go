@@ -44,7 +44,7 @@ func (d *Dft) Direction() Direction {
 // computeTwiddles precomputes all twiddle factors for a given FFT size
 func computeTwiddles(n int, direction Direction) []complex128 {
 	twiddles := make([]complex128, n)
-	for k := 0; k < n; k++ {
+	for k := range n {
 		angle := 2.0 * math.Pi * float64(k) / float64(n)
 		if direction == Forward {
 			angle = -angle
@@ -77,6 +77,11 @@ func (d *Dft) Process(buffer []complex128) {
 
 // ProcessWithScratch computes the FFT in-place using provided scratch space
 func (d *Dft) ProcessWithScratch(buffer, scratch []complex128) {
+	if len(scratch) < d.Len() {
+		// Prevent a panic by allocating scratch if caller provided insufficient space
+		scratch = make([]complex128, d.Len())
+	}
+
 	// For in-place operation, we use scratch as temporary output space
 	for i := 0; i < len(buffer); i += d.Len() {
 		chunk := buffer[i : i+d.Len()]
@@ -108,7 +113,7 @@ func (d *Dft) ProcessImmutable(input []complex128, output, scratch []complex128)
 func (d *Dft) performFftImmutable(signal []complex128, spectrum []complex128, scratch []complex128) {
 	n := len(d.twiddles)
 
-	for k := 0; k < n; k++ {
+	for k := range n {
 		sum := complex(0, 0)
 		twiddleIndex := 0
 
@@ -134,7 +139,7 @@ func (d *Dft) performFftOutOfPlace(signal []complex128, spectrum []complex128, s
 // computeTwiddles32 precomputes all twiddle factors for a given FFT size (complex64)
 func computeTwiddles32(n int, direction Direction) []complex64 {
 	twiddles := make([]complex64, n)
-	for k := 0; k < n; k++ {
+	for k := range n {
 		angle := 2.0 * math.Pi * float64(k) / float64(n)
 		if direction == Forward {
 			angle = -angle
@@ -222,7 +227,7 @@ func (d *Dft32) ProcessImmutable(input []complex64, output, scratch []complex64)
 func (d *Dft32) performFftImmutable(signal []complex64, spectrum []complex64, scratch []complex64) {
 	n := len(d.twiddles)
 
-	for k := 0; k < n; k++ {
+	for k := range n {
 		sum := complex(float32(0), float32(0))
 		twiddleIndex := 0
 

@@ -90,7 +90,7 @@ func TestBitReversedTransposeDetailed(t *testing.T) {
 
 	// Show the transpose
 	t.Logf("\nTranspose result:")
-	for i := 0; i < size; i++ {
+	for i := range size {
 		t.Logf("output[%2d] = input[%2d] = %v", i, int(real(output[i])), output[i])
 	}
 
@@ -103,7 +103,7 @@ func TestBitReversedTransposeDetailed(t *testing.T) {
 	bitRev := []int{0, 2, 1, 3}
 
 	t.Logf("\nExpected mapping (col=0):")
-	for row := 0; row < 4; row++ {
+	for row := range 4 {
 		revRow := bitRev[row]
 		inputIdx := row*baseLen + 0
 		outputIdx := 0*4 + revRow
@@ -123,9 +123,9 @@ func TestButterfly4StageIsolated(t *testing.T) {
 	}
 
 	t.Logf("Before butterfly stage:")
-	for row := 0; row < 4; row++ {
+	for row := range 4 {
 		t.Logf("Row %d:", row)
-		for col := 0; col < 8; col++ {
+		for col := range 8 {
 			idx := col + row*numColumns
 			t.Logf("  col=%d: data[%2d] = %v", col, idx, data[idx])
 		}
@@ -141,9 +141,9 @@ func TestButterfly4StageIsolated(t *testing.T) {
 	butterfly4Stage(data, twiddles, numColumns, bf4)
 
 	t.Logf("\nAfter butterfly stage:")
-	for row := 0; row < 4; row++ {
+	for row := range 4 {
 		t.Logf("Row %d:", row)
-		for col := 0; col < 8; col++ {
+		for col := range 8 {
 			idx := col + row*numColumns
 			t.Logf("  col=%d: data[%2d] = %v", col, idx, data[idx])
 		}
@@ -153,7 +153,8 @@ func TestButterfly4StageIsolated(t *testing.T) {
 // TestFullRadix4StepByStep walks through the algorithm step by step
 func TestFullRadix4StepByStep(t *testing.T) {
 	size := 32
-	baseLen := 8
+	fft := NewRadix4(size, Forward)
+	baseLen := fft.baseLen
 
 	// Simple input
 	input := make([]complex128, size)
@@ -185,14 +186,16 @@ func TestFullRadix4StepByStep(t *testing.T) {
 
 	// Step 4: Cross FFTs (radix-4 stage)
 	// For size=32, baseLen=8, we have one radix-4 stage with numColumns=8
-	fft := NewRadix4(size, Forward)
-
 	t.Logf("\n=== Step 4: Radix-4 cross FFT ===")
 	t.Logf("numColumns should be: %d", baseLen)
-	t.Logf("Twiddles available: %d (need %d)", len(fft.twiddles), baseLen*3)
+	t.Logf("Twiddles available: %d (need %d per stage)", len(fft.twiddles), baseLen*3)
 
-	bf4 := NewButterfly4(Forward)
-	butterfly4Stage(output, fft.twiddles, baseLen, bf4)
+	if len(fft.twiddles) >= baseLen*3 {
+		bf4 := NewButterfly4(Forward)
+		butterfly4Stage(output, fft.twiddles, baseLen, bf4)
+	} else {
+		t.Logf("Skipping manual cross stage: this radix4 plan has no cross stage for size=%d", size)
+	}
 
 	t.Logf("First 8: %v", output[:8])
 	t.Logf("Next 8: %v", output[8:16])
@@ -204,7 +207,7 @@ func TestFullRadix4StepByStep(t *testing.T) {
 	dft.ProcessWithScratch(expected, make([]complex128, dft.InplaceScratchLen()))
 
 	t.Logf("\n=== Comparison ===")
-	for i := 0; i < size; i++ {
+	for i := range size {
 		err := cmplx.Abs(output[i] - expected[i])
 		if err > 0.1 {
 			t.Logf("[%2d] got=%v want=%v err=%.3f", i, output[i], expected[i], err)
@@ -227,7 +230,7 @@ func TestCompareWithRustFFTPattern(t *testing.T) {
 
 	t.Logf("Impulse FFT output:")
 	// FFT of impulse should be all 1s
-	for i := 0; i < size; i++ {
+	for i := range size {
 		expected := complex(1, 0)
 		err := cmplx.Abs(buffer[i] - expected)
 		if err > 1e-10 {

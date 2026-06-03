@@ -28,9 +28,9 @@ func TestDataLayout(t *testing.T) {
 	// For 4 rows (2 bits), bit reverse is: 0->0, 1->2, 2->1, 3->3
 
 	t.Logf("\nExpected column-major layout with bit-reversed rows:")
-	for col := 0; col < baseLen; col++ {
+	for col := range baseLen {
 		t.Logf("Column %d:", col)
-		for row := 0; row < numRows; row++ {
+		for row := range numRows {
 			idx := col*numRows + row
 			t.Logf("  Row %d: output[%2d] = %v", row, idx, output[idx])
 		}
@@ -45,7 +45,7 @@ func TestDataLayout(t *testing.T) {
 
 	t.Logf("\nFor butterfly4Stage with numColumns=%d:", baseLen)
 	t.Logf("Each column should consist of 4 values strided by %d", baseLen)
-	for col := 0; col < baseLen; col++ {
+	for col := range baseLen {
 		idx0 := col
 		idx1 := col + baseLen
 		idx2 := col + 2*baseLen
@@ -75,7 +75,7 @@ func TestButterfly4StageCorrectness(t *testing.T) {
 	}
 
 	t.Logf("Input (row-major, 4 rows x 2 cols):")
-	for row := 0; row < 4; row++ {
+	for row := range 4 {
 		t.Logf("  Row %d: %v", row, data[row*2:(row+1)*2])
 	}
 
@@ -89,7 +89,7 @@ func TestButterfly4StageCorrectness(t *testing.T) {
 	butterfly4Stage(data, twiddles, numColumns, bf4)
 
 	t.Logf("\nAfter butterfly4Stage:")
-	for row := 0; row < 4; row++ {
+	for row := range 4 {
 		t.Logf("  Row %d: %v", row, data[row*2:(row+1)*2])
 	}
 
@@ -118,7 +118,7 @@ func TestButterfly4StageCorrectness(t *testing.T) {
 	t.Logf("Got column 0: %v", got0)
 	t.Logf("Got column 1: %v", got1)
 
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if cmplx.Abs(got0[i]-expected0[i]) > 1e-10 {
 			t.Errorf("Col 0, row %d: got=%v want=%v", i, got0[i], expected0[i])
 		}

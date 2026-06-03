@@ -42,7 +42,7 @@ func NewBluestein(length int, direction Direction) *Bluestein {
 	chirp := make([]complex128, length)
 	chirpConj := make([]complex128, fftSize)
 
-	for k := 0; k < length; k++ {
+	for k := range length {
 		// angle = -π*k²/N (or +π for inverse)
 		angle := -math.Pi * float64(k*k) / float64(length)
 		if direction == Inverse {

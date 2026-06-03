@@ -30,8 +30,8 @@ func NewMixedRadix(widthFft, heightFft FftInterface) *MixedRadix {
 
 	// Precompute twiddle factors
 	twiddles := make([]complex128, length)
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
+	for x := range width {
+		for y := range height {
 			idx := x*height + y
 			angle := -2.0 * math.Pi * float64(x*y) / float64(length)
 			if direction == Inverse {
@@ -41,28 +41,17 @@ func NewMixedRadix(widthFft, heightFft FftInterface) *MixedRadix {
 		}
 	}
 
-	// Calculate scratch space requirements
+	// Scratch layout:
+	// - first "length" values: intermediate matrix data (x-major)
+	// - temp vector for gather/scatter of strided rows/columns
+	// - scratch for inner FFT implementations
 	heightInplace := heightFft.InplaceScratchLen()
 	widthInplace := widthFft.InplaceScratchLen()
-	widthOutofplace := 0 // We'll use in-place for width FFT
+	tempLen := max(width, height)
+	innerScratchLen := max(widthInplace, heightInplace)
 
-	maxInnerInplace := heightInplace
-	if widthInplace > maxInnerInplace {
-		maxInnerInplace = widthInplace
-	}
-
-	outofplaceScratch := 0
-	if maxInnerInplace > length {
-		outofplaceScratch = maxInnerInplace
-	}
-
-	inplaceScratch := length
-	if heightInplace > length {
-		inplaceScratch = length + (heightInplace - length)
-	}
-	if widthOutofplace > 0 && widthOutofplace > inplaceScratch-length {
-		inplaceScratch = length + widthOutofplace
-	}
+	inplaceScratch := length + tempLen + innerScratchLen
+	outofplaceScratch := inplaceScratch
 
 	return &MixedRadix{
 		twiddles:          twiddles,
@@ -89,39 +78,56 @@ func (m *MixedRadix) Process(buffer []complex128) {
 }
 
 func (m *MixedRadix) ProcessWithScratch(buffer, scratch []complex128) {
-	// Six-step FFT algorithm (based on RustFFT)
+	if len(scratch) < m.inplaceScratch {
+		// Prevent a panic by allocating scratch if caller provided insufficient space
+		scratch = make([]complex128, m.inplaceScratch)
+	}
+
+	// Intermediate storage in x-major layout: idx = x*height + y.
 	selfScratch := scratch[:m.length]
-	var innerScratch []complex128
-	if len(scratch) > m.length {
-		innerScratch = scratch[m.length:]
+	extra := scratch[m.length:]
+	tempLen := max(m.width, m.height)
+	temp := extra[:tempLen]
+	innerScratch := extra[tempLen:]
+
+	heightScratchNeed := m.heightFft.InplaceScratchLen()
+	widthScratchNeed := m.widthFft.InplaceScratchLen()
+
+	// Step 1: For each x, gather a strided column y from input (row-major), FFT(height), store contiguous in selfScratch.
+	for x := 0; x < m.width; x++ {
+		for y := 0; y < m.height; y++ {
+			temp[y] = buffer[y*m.width+x]
+		}
+
+		if heightScratchNeed > 0 {
+			m.heightFft.ProcessWithScratch(temp[:m.height], innerScratch[:heightScratchNeed])
+		} else {
+			m.heightFft.ProcessWithScratch(temp[:m.height], nil)
+		}
+
+		for y := 0; y < m.height; y++ {
+			idx := x*m.height + y
+			selfScratch[idx] = temp[y] * m.twiddles[idx]
+		}
 	}
 
-	// STEP 1: Transpose input (width x height) to (height x width)
-	transpose(m.width, m.height, buffer, selfScratch)
+	// Step 2: For each y, gather row across x, FFT(width), then store output in natural frequency order:
+	// k = y + height*x => index x*height + y.
+	for y := 0; y < m.height; y++ {
+		for x := 0; x < m.width; x++ {
+			temp[x] = selfScratch[x*m.height+y]
+		}
 
-	// STEP 2: Perform height-sized FFTs
-	// The heightFft will process multiple FFTs of size height
-	heightScratch := buffer // Use buffer as scratch since we've copied data to selfScratch
-	if len(innerScratch) >= len(buffer) {
-		heightScratch = innerScratch
+		if widthScratchNeed > 0 {
+			m.widthFft.ProcessWithScratch(temp[:m.width], innerScratch[:widthScratchNeed])
+		} else {
+			m.widthFft.ProcessWithScratch(temp[:m.width], nil)
+		}
+
+		for x := 0; x < m.width; x++ {
+			buffer[x*m.height+y] = temp[x]
+		}
 	}
-	m.heightFft.ProcessWithScratch(selfScratch, heightScratch)
-
-	// STEP 3: Apply twiddle factors
-	for i := range selfScratch {
-		selfScratch[i] = selfScratch[i] * m.twiddles[i]
-	}
-
-	// STEP 4: Transpose back to (width x height)
-	transpose(m.height, m.width, selfScratch, buffer)
-
-	// STEP 5: Perform width-sized FFTs out-of-place (buffer → selfScratch)
-	// Copy buffer to selfScratch, process there
-	copy(selfScratch, buffer)
-	m.widthFft.ProcessWithScratch(selfScratch, innerScratch)
-
-	// STEP 6: Transpose final result (width x height) → buffer
-	transpose(m.width, m.height, selfScratch, buffer)
 }
 
 func (m *MixedRadix) ProcessOutOfPlace(input, output, scratch []complex128) {
@@ -137,8 +143,8 @@ func (m *MixedRadix) ProcessImmutable(input []complex128, output, scratch []comp
 // transpose performs a matrix transpose
 // Treats input as a rows x cols matrix and transposes to output
 func transpose(rows, cols int, input, output []complex128) {
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
+	for r := range rows {
+		for c := range cols {
 			inputIdx := r*cols + c
 			outputIdx := c*rows + r
 			output[outputIdx] = input[inputIdx]

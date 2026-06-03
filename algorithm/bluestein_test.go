@@ -1,6 +1,7 @@
 package algorithm
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -10,7 +11,7 @@ func TestBluesteinPrimes(t *testing.T) {
 	primes := []int{11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53}
 
 	for _, n := range primes {
-		t.Run("Prime"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Prime %d", n), func(t *testing.T) {
 			// Create input
 			input := make([]complex128, n)
 			for i := range input {
@@ -53,7 +54,7 @@ func TestBluesteinArbitrary(t *testing.T) {
 	sizes := []int{100, 127, 200, 255, 300, 500, 1000}
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create input
 			input := make([]complex128, n)
 			for i := range input {
@@ -123,7 +124,7 @@ func TestBluesteinRoundTrip(t *testing.T) {
 	sizes := []int{11, 13, 17, 23, 100, 127, 200}
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create input
 			input := make([]complex128, n)
 			for i := range input {
