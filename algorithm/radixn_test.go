@@ -168,3 +168,36 @@ func TestRemainderReversal(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkRadixN(b *testing.B) {
+	testCases := []struct {
+		factors []RadixFactor
+		size    int
+		name    string
+	}{
+		{[]RadixFactor{Factor2, Factor2}, 4, "4=2×2"},
+		{[]RadixFactor{Factor2, Factor3}, 6, "6=2×3"},
+		{[]RadixFactor{Factor2, Factor2, Factor2}, 8, "8=2³"},
+		{[]RadixFactor{Factor3, Factor3}, 9, "9=3²"},
+		{[]RadixFactor{Factor2, Factor2, Factor3}, 12, "12=2²×3"},
+		{[]RadixFactor{Factor3, Factor5}, 15, "15=3×5"},
+		{[]RadixFactor{Factor2, Factor2, Factor2, Factor3}, 24, "24=2³×3"},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			baseFft := NewDft(1, Forward)
+			radixN := NewRadixN(tc.factors, baseFft)
+			input := make([]complex128, tc.size)
+			scratch := make([]complex128, radixN.InplaceScratchLen())
+
+			for i := range input {
+				input[i] = complex(float64(i)*0.7, float64(i)*0.3)
+			}
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				radixN.ProcessWithScratch(input, scratch)
+			}
+		})
+	}
+}

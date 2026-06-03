@@ -161,6 +161,10 @@ func (r *RadixN) processOne(buffer, scratch []complex128) {
 	crossFftLen := r.baseLen
 	twiddleOffset := 0
 
+	// Pre-allocate buffers for cross-FFT to reuse across all calls
+	crossFftChunk := make([]complex128, 7)       // Max radix is 7
+	crossFftScratch := make([]complex128, 0, 32) // Conservative estimate for scratch
+
 	for i, butterfly := range r.butterflies {
 		radix := int(r.factors[i])
 		crossFftColumns := crossFftLen
@@ -169,9 +173,17 @@ func (r *RadixN) processOne(buffer, scratch []complex128) {
 		// Apply cross-FFT butterflies on chunks
 		layerTwiddles := r.twiddles[twiddleOffset : twiddleOffset+crossFftColumns*(radix-1)]
 
+		// Ensure scratch is large enough for this butterfly
+		requiredScratchLen := butterfly.InplaceScratchLen()
+		if cap(crossFftScratch) < requiredScratchLen {
+			crossFftScratch = make([]complex128, requiredScratchLen)
+		} else {
+			crossFftScratch = crossFftScratch[:requiredScratchLen]
+		}
+
 		for chunkStart := 0; chunkStart < r.length; chunkStart += crossFftLen {
 			chunk := output[chunkStart : chunkStart+crossFftLen]
-			applyCrossFft(chunk, layerTwiddles, crossFftColumns, radix, butterfly)
+			applyCrossFft(chunk, layerTwiddles, crossFftColumns, radix, butterfly, crossFftChunk[:radix], crossFftScratch)
 		}
 
 		twiddleOffset += crossFftColumns * (radix - 1)
@@ -215,11 +227,8 @@ func reverseRemainders(value int, factors []TransposeFactor) int {
 
 // applyCrossFft applies a cross-FFT butterfly with twiddles
 // This performs radix-point butterflies on strided data
-func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int, butterfly FftInterface) {
-	// Reuse buffers across columns to avoid per-iteration allocations.
-	chunk := make([]complex128, radix)
-	scratch := make([]complex128, butterfly.InplaceScratchLen())
-
+// Reuses pre-allocated chunk and scratch buffers to avoid per-iteration allocations.
+func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int, butterfly FftInterface, chunk, scratch []complex128) {
 	// For each column
 	for col := range columns {
 		// First element (no twiddle)
