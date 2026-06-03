@@ -195,7 +195,7 @@ func BenchmarkRadixN(b *testing.B) {
 				input[i] = complex(float64(i)*0.7, float64(i)*0.3)
 			}
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				radixN.ProcessWithScratch(input, scratch)
 			}
 		})

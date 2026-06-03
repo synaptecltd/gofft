@@ -32,6 +32,7 @@ type RadixN struct {
 	butterflies      []FftInterface    // Butterfly for each factor
 	twiddles         []complex128      // All twiddle factors
 	inplaceScratch   int
+	crossFftChunk    []complex128 // Reusable chunk buffer (max radix 7)
 }
 
 // NewRadixN creates a RadixN FFT instance
@@ -111,11 +112,21 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 		}
 	}
 
-	// Calculate scratch space
+	// Calculate scratch space needed for base FFT and butterflies
 	baseScratch := baseFft.InplaceScratchLen()
+	maxButterflyScratch := 0
+	for _, b := range butterflies {
+		if s := b.InplaceScratchLen(); s > maxButterflyScratch {
+			maxButterflyScratch = s
+		}
+	}
+
 	inplaceScratch := length
 	if baseScratch > length {
 		inplaceScratch = length + baseScratch
+	}
+	if maxButterflyScratch > inplaceScratch-length {
+		inplaceScratch = length + maxButterflyScratch
 	}
 
 	return &RadixN{
@@ -128,6 +139,7 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 		butterflies:      butterflies,
 		twiddles:         twiddles,
 		inplaceScratch:   inplaceScratch,
+		crossFftChunk:    make([]complex128, 7), // Max radix is 7
 	}
 }
 
@@ -161,9 +173,8 @@ func (r *RadixN) processOne(buffer, scratch []complex128) {
 	crossFftLen := r.baseLen
 	twiddleOffset := 0
 
-	// Pre-allocate buffers for cross-FFT to reuse across all calls
-	crossFftChunk := make([]complex128, 7)       // Max radix is 7
-	crossFftScratch := make([]complex128, 0, 32) // Conservative estimate for scratch
+	// Use pre-allocated buffers for cross-FFT (zero allocations)
+	crossFftScratch := scratch[r.length:r.InplaceScratchLen()] // Use provided scratch
 
 	for i, butterfly := range r.butterflies {
 		radix := int(r.factors[i])
@@ -173,17 +184,13 @@ func (r *RadixN) processOne(buffer, scratch []complex128) {
 		// Apply cross-FFT butterflies on chunks
 		layerTwiddles := r.twiddles[twiddleOffset : twiddleOffset+crossFftColumns*(radix-1)]
 
-		// Ensure scratch is large enough for this butterfly
-		requiredScratchLen := butterfly.InplaceScratchLen()
-		if cap(crossFftScratch) < requiredScratchLen {
-			crossFftScratch = make([]complex128, requiredScratchLen)
-		} else {
-			crossFftScratch = crossFftScratch[:requiredScratchLen]
-		}
+		// Use pre-allocated scratch with proper length
+		butterflyRequiredLen := butterfly.InplaceScratchLen()
+		butterflyScratch := crossFftScratch[:butterflyRequiredLen]
 
 		for chunkStart := 0; chunkStart < r.length; chunkStart += crossFftLen {
 			chunk := output[chunkStart : chunkStart+crossFftLen]
-			applyCrossFft(chunk, layerTwiddles, crossFftColumns, radix, butterfly, crossFftChunk[:radix], crossFftScratch)
+			applyCrossFft(chunk, layerTwiddles, crossFftColumns, radix, butterfly, r.crossFftChunk[:radix], butterflyScratch)
 		}
 
 		twiddleOffset += crossFftColumns * (radix - 1)
