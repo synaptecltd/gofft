@@ -1,6 +1,7 @@
 package algorithm
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -10,7 +11,7 @@ func BenchmarkRadersVsBluestein(b *testing.B) {
 
 	for _, p := range primes {
 		// Benchmark Rader's
-		b.Run("Raders/Size"+string(rune(p+'0')), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Raders/Size %d", p), func(b *testing.B) {
 			innerFft := NewDft(p-1, Forward)
 			raders := NewRaders(innerFft)
 			buffer := make([]complex128, p)
@@ -23,7 +24,7 @@ func BenchmarkRadersVsBluestein(b *testing.B) {
 		})
 
 		// Benchmark Bluestein's
-		b.Run("Bluestein/Size"+string(rune(p+'0')), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Bluestein/Size %d", p), func(b *testing.B) {
 			bluestein := NewBluestein(p, Forward)
 			buffer := make([]complex128, p)
 			scratch := make([]complex128, bluestein.InplaceScratchLen())
@@ -43,31 +44,42 @@ func BenchmarkRadersWithOptimizedInner(b *testing.B) {
 		desc  string
 	}{
 		{17, "Prime17(innerFFT=16=Butterfly16)"},
-		{33, "Prime37(innerFFT=36=6x6)"},
-		{65, "Prime65(innerFFT=64=Radix4)"},
+		{37, "Prime37(innerFFT=36=6x6)"},
+		{257, "Prime257(innerFFT=256=Radix4)"},
 	}
 
 	for _, tc := range testCases {
 		b.Run(tc.desc, func(b *testing.B) {
+			if !isPrime(tc.prime) {
+				b.Skipf("skipping non-prime size %d for Rader benchmark", tc.prime)
+			}
+
 			var innerFft FftInterface
 
 			innerLen := tc.prime - 1
 			// Use appropriate optimized FFT for inner
-			if isPowerOfTwo(innerLen) {
-				if innerLen <= 32 {
-					switch innerLen {
-					case 16:
-						innerFft = NewButterfly16(Forward)
-					case 32:
-						innerFft = NewButterfly32(Forward)
-					default:
-						innerFft = NewDft(innerLen, Forward)
+			switch innerLen {
+			case 16:
+				innerFft = NewButterfly16(Forward)
+			case 36:
+				innerFft = NewMixedRadix(NewButterfly6(Forward), NewButterfly6(Forward))
+			case 256:
+				innerFft = NewRadix4(innerLen, Forward)
+			default:
+				if isPowerOfTwo(innerLen) {
+					if innerLen <= 32 {
+						switch innerLen {
+						case 32:
+							innerFft = NewButterfly32(Forward)
+						default:
+							innerFft = NewDft(innerLen, Forward)
+						}
+					} else {
+						innerFft = NewRadix4(innerLen, Forward)
 					}
 				} else {
-					innerFft = NewRadix4(innerLen, Forward)
+					innerFft = NewDft(innerLen, Forward)
 				}
-			} else {
-				innerFft = NewDft(innerLen, Forward)
 			}
 
 			raders := NewRaders(innerFft)

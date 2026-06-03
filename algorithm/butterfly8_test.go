@@ -35,20 +35,11 @@ func TestButterfly8WithDifferentInputs(t *testing.T) {
 	t.Logf("Chunk 1 input:  %v", chunk1)
 	t.Logf("Chunk 1 output: %v", result1)
 
-	// Check if outputs are different (they should be!)
-	allSame := true
-	for i := 1; i < 8; i++ { // Skip DC component
+	// chunk1 = chunk0 + constant offset, so only the DC component should differ.
+	for i := 1; i < 8; i++ {
 		if cmplx.Abs(result0[i]-result1[i]) > 1e-10 {
-			allSame = false
-			break
+			t.Errorf("Non-DC bin %d changed for constant offset input: got0=%v got1=%v", i, result0[i], result1[i])
 		}
-	}
-
-	if allSame {
-		t.Errorf("ERROR: Butterfly8 produced identical non-DC outputs for different inputs!")
-		t.Errorf("This suggests Butterfly8 has a bug")
-	} else {
-		t.Logf("✓ Outputs are different as expected")
 	}
 
 	// Also check against DFT to verify correctness
@@ -66,7 +57,7 @@ func TestButterfly8WithDifferentInputs(t *testing.T) {
 	t.Logf("DFT expected for chunk 1: %v", expected1)
 
 	// Compare Butterfly8 results with DFT
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		err0 := cmplx.Abs(result0[i] - expected0[i])
 		err1 := cmplx.Abs(result1[i] - expected1[i])
 
@@ -102,7 +93,7 @@ func TestButterfly8SimpleSequence(t *testing.T) {
 	t.Logf("Butterfly8: %v", buffer)
 	t.Logf("DFT:      %v", expected)
 
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		err := cmplx.Abs(buffer[i] - expected[i])
 		if err > 1e-10 {
 			t.Errorf("[%d] got=%v want=%v error=%.6e", i, buffer[i], expected[i], err)

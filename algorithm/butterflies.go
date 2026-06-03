@@ -285,14 +285,14 @@ func (b *Butterfly8) performFft(buffer []complex128) {
 	// Step 4: Transpose - skipped because we'll do non-contiguous FFTs
 
 	// Step 5: Row FFTs (2-point FFTs between corresponding elements)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		temp := scratch0[i] + scratch1[i]
 		scratch1[i] = scratch0[i] - scratch1[i]
 		scratch0[i] = temp
 	}
 
 	// Step 6: Copy data to output (no transpose needed since we skipped step 4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		buffer[i] = scratch0[i]
 		buffer[i+4] = scratch1[i]
 	}
@@ -350,7 +350,7 @@ func (b *Butterfly16) performFft(buffer []complex128) {
 	bf4 := NewButterfly4(b.direction)
 
 	// Column FFTs
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		chunk := []complex128{buffer[i], buffer[i+4], buffer[i+8], buffer[i+12]}
 		bf4.performFft(chunk)
 		buffer[i], buffer[i+4], buffer[i+8], buffer[i+12] = chunk[0], chunk[1], chunk[2], chunk[3]
@@ -358,7 +358,7 @@ func (b *Butterfly16) performFft(buffer []complex128) {
 
 	// Apply twiddle factors
 	for row := 1; row < 4; row++ {
-		for col := 0; col < 4; col++ {
+		for col := range 4 {
 			idx := row*4 + col
 			buffer[idx] = buffer[idx] * b.twiddles[row*col%16]
 		}
@@ -371,7 +371,7 @@ func (b *Butterfly16) performFft(buffer []complex128) {
 	bf4.performFft(buffer[12:16])
 
 	// Transpose (simplified)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		for j := i + 1; j < 4; j++ {
 			idx1 := i*4 + j
 			idx2 := j*4 + i
@@ -388,7 +388,7 @@ func (b *Butterfly16) performFftOutOfPlace(input, output []complex128) {
 // bitReverse performs a bit-reversal permutation on the input
 func bitReverse(data []complex128, logn int) {
 	n := 1 << logn
-	for i := 0; i < n; i++ {
+	for i := range n {
 		j := reverseBits(i, logn)
 		if j > i {
 			data[i], data[j] = data[j], data[i]
@@ -399,7 +399,7 @@ func bitReverse(data []complex128, logn int) {
 // reverseBits reverses the bottom n bits of x
 func reverseBits(x, n int) int {
 	result := 0
-	for i := 0; i < n; i++ {
+	for range n {
 		result = (result << 1) | (x & 1)
 		x >>= 1
 	}
@@ -466,12 +466,12 @@ func (b *Butterfly32) performFft(buffer []complex128) {
 	scratchOddsN3 := [8]complex128{} // Indices 31, 3, 7, 11, 15, 19, 23, 27 (wrapped)
 
 	// Copy evens (indices 0, 2, 4, 6, ..., 30)
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		scratchEvens[i] = buffer[i*2]
 	}
 
 	// Copy odds n1 (indices 1, 5, 9, 13, 17, 21, 25, 29)
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		scratchOddsN1[i] = buffer[1+i*4]
 	}
 
@@ -493,32 +493,32 @@ func (b *Butterfly32) performFft(buffer []complex128) {
 	}
 
 	// Step 4: Cross FFTs (2-point butterflies between odds_n1 and odds_n3)
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		temp := scratchOddsN1[i] + scratchOddsN3[i]
 		scratchOddsN3[i] = scratchOddsN1[i] - scratchOddsN3[i]
 		scratchOddsN1[i] = temp
 	}
 
 	// Apply 90-degree rotation to odds_n3
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		scratchOddsN3[i] = rotate90(scratchOddsN3[i], b.direction)
 	}
 
 	// Step 5: Combine results
 	// Indices 0-7: evens[0:8] + odds_n1
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		buffer[i] = scratchEvens[i] + scratchOddsN1[i]
 	}
 	// Indices 8-15: evens[8:16] + odds_n3
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		buffer[8+i] = scratchEvens[8+i] + scratchOddsN3[i]
 	}
 	// Indices 16-23: evens[0:8] - odds_n1
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		buffer[16+i] = scratchEvens[i] - scratchOddsN1[i]
 	}
 	// Indices 24-31: evens[8:16] - odds_n3
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		buffer[24+i] = scratchEvens[8+i] - scratchOddsN3[i]
 	}
 }
@@ -663,7 +663,7 @@ func (b *Butterfly6) performFft(buffer []complex128) {
 	// Step 4: Transpose - SKIPPED (will do non-contiguous FFTs)
 
 	// Step 5: Row FFTs (2-point)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		temp := scratchA[i] + scratchB[i]
 		scratchB[i] = scratchA[i] - scratchB[i]
 		scratchA[i] = temp

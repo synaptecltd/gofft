@@ -1,6 +1,7 @@
 package gofft
 
 import (
+	"fmt"
 	"math"
 	"math/cmplx"
 	"testing"
@@ -29,9 +30,9 @@ func naiveDFT(input []complex128, forward bool) []complex128 {
 		sign = 1.0
 	}
 
-	for k := 0; k < n; k++ {
+	for k := range n {
 		sum := complex(0, 0)
-		for j := 0; j < n; j++ {
+		for j := range n {
 			angle := sign * 2.0 * math.Pi * float64(k*j) / float64(n)
 			twiddle := cmplx.Exp(complex(0, angle))
 			sum += input[j] * twiddle
@@ -46,7 +47,7 @@ func TestFFT_PowerOfTwo(t *testing.T) {
 	sizes := []int{2, 4, 8, 16, 32, 64}
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create test signal
 			input := make([]complex128, n)
 			for i := range input {
@@ -81,7 +82,7 @@ func TestFFT_InverseProperty(t *testing.T) {
 	sizes := []int{2, 4, 8, 16}
 
 	for _, n := range sizes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create test signal
 			input := make([]complex128, n)
 			for i := range input {
@@ -179,7 +180,7 @@ func TestPrimeFactors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run("Factor"+string(rune(tt.n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Factor %d", tt.n), func(t *testing.T) {
 			result := ComputePrimeFactors(tt.n)
 			if result.GetPowerOfTwo() != tt.expected.GetPowerOfTwo() {
 				t.Errorf("Power of 2 mismatch: got %d, want %d", result.GetPowerOfTwo(), tt.expected.GetPowerOfTwo())
@@ -223,7 +224,7 @@ func BenchmarkFFT(b *testing.B) {
 	sizes := []int{64, 256, 1024, 4096}
 
 	for _, n := range sizes {
-		b.Run("Size"+string(rune(n+'0')), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Size %d", n), func(b *testing.B) {
 			planner := NewPlanner()
 			fft := planner.PlanForward(n)
 			buffer := make([]complex128, n)

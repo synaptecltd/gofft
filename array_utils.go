@@ -3,8 +3,8 @@ package gofft
 // Transpose performs an out-of-place matrix transpose
 // data is treated as a rows x cols matrix stored in row-major order
 func Transpose(input, output []complex128, rows, cols int) {
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
+	for r := range rows {
+		for c := range cols {
 			output[c*rows+r] = input[r*cols+c]
 		}
 	}
@@ -12,8 +12,8 @@ func Transpose(input, output []complex128, rows, cols int) {
 
 // Transpose32 performs an out-of-place matrix transpose for complex64
 func Transpose32(input, output []complex64, rows, cols int) {
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
+	for r := range rows {
+		for c := range cols {
 			output[c*rows+r] = input[r*cols+c]
 		}
 	}
@@ -21,7 +21,7 @@ func Transpose32(input, output []complex64, rows, cols int) {
 
 // TransposeInplace performs an in-place matrix transpose for square matrices
 func TransposeInplace(data []complex128, n int) {
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for j := i + 1; j < n; j++ {
 			data[i*n+j], data[j*n+i] = data[j*n+i], data[i*n+j]
 		}
@@ -31,7 +31,7 @@ func TransposeInplace(data []complex128, n int) {
 // BitReverse performs a bit-reversal permutation on the input
 func BitReverse(data []complex128, logn int) {
 	n := 1 << logn
-	for i := 0; i < n; i++ {
+	for i := range n {
 		j := reverseBits(i, logn)
 		if j > i {
 			data[i], data[j] = data[j], data[i]
@@ -42,7 +42,7 @@ func BitReverse(data []complex128, logn int) {
 // reverseBits reverses the bottom n bits of x
 func reverseBits(x, n int) int {
 	result := 0
-	for i := 0; i < n; i++ {
+	for range n {
 		result = (result << 1) | (x & 1)
 		x >>= 1
 	}
@@ -52,7 +52,7 @@ func reverseBits(x, n int) int {
 // BitReverse32 performs a bit-reversal permutation on complex64 input
 func BitReverse32(data []complex64, logn int) {
 	n := 1 << logn
-	for i := 0; i < n; i++ {
+	for i := range n {
 		j := reverseBits(i, logn)
 		if j > i {
 			data[i], data[j] = data[j], data[i]

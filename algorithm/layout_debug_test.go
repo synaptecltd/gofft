@@ -50,7 +50,7 @@ func TestActualLayoutAfterBaseFFTs(t *testing.T) {
 	// Indices [7, 15, 23, 31] = column 7 (4 values)
 
 	t.Logf("\nWhat butterfly4Stage will see (numColumns=%d):", baseLen)
-	for col := 0; col < baseLen; col++ {
+	for col := range baseLen {
 		idx0 := col
 		idx1 := col + baseLen
 		idx2 := col + 2*baseLen

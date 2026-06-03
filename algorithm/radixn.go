@@ -99,7 +99,7 @@ func NewRadixN(factors []RadixFactor, baseFft FftInterface) *RadixN {
 		crossFftLen *= int(factor)
 
 		// Twiddles for this layer
-		for i := 0; i < crossFftColumns; i++ {
+		for i := range crossFftColumns {
 			for k := 1; k < int(factor); k++ {
 				angle := -2.0 * math.Pi * float64(i*k) / float64(crossFftLen)
 				if direction == Inverse {
@@ -187,9 +187,9 @@ func factorTranspose(height int, input, output []complex128, factors []Transpose
 	width := len(input) / height
 
 	// Simple transpose with remainder reversal
-	for x := 0; x < width; x++ {
+	for x := range width {
 		xRev := reverseRemainders(x, factors)
-		for y := 0; y < height; y++ {
+		for y := range height {
 			inputIdx := x + y*width
 			outputIdx := y + xRev*height
 			output[outputIdx] = input[inputIdx]
@@ -217,7 +217,7 @@ func reverseRemainders(value int, factors []TransposeFactor) int {
 // This performs radix-point butterflies on strided data
 func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int, butterfly FftInterface) {
 	// For each column
-	for col := 0; col < columns; col++ {
+	for col := range columns {
 		// Extract radix elements (strided by columns)
 		chunk := make([]complex128, radix)
 
@@ -237,7 +237,7 @@ func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int,
 		butterfly.ProcessWithScratch(chunk, scratch)
 
 		// Write back
-		for r := 0; r < radix; r++ {
+		for r := range radix {
 			idx := col + r*columns
 			data[idx] = chunk[r]
 		}

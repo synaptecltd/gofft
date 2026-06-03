@@ -167,10 +167,10 @@ func (pf PrimeFactors) PartitionFactors() (PrimeFactors, PrimeFactors) {
 	leftPow3 := halfPow3
 	rightPow3 := pf.powerOfThree - halfPow3
 
-	for i := 0; i < leftPow3; i++ {
+	for range leftPow3 {
 		leftProduct *= 3
 	}
-	for i := 0; i < rightPow3; i++ {
+	for range rightPow3 {
 		rightProduct *= 3
 	}
 
@@ -287,7 +287,7 @@ func TwiddleFactor32(k, n int, direction Direction) complex64 {
 // ComputeTwiddles precomputes all twiddle factors for a given FFT size
 func ComputeTwiddles(n int, direction Direction) []complex128 {
 	twiddles := make([]complex128, n)
-	for k := 0; k < n; k++ {
+	for k := range n {
 		twiddles[k] = TwiddleFactor(k, n, direction)
 	}
 	return twiddles
@@ -296,7 +296,7 @@ func ComputeTwiddles(n int, direction Direction) []complex128 {
 // ComputeTwiddles32 precomputes all twiddle factors for a given FFT size (float32)
 func ComputeTwiddles32(n int, direction Direction) []complex64 {
 	twiddles := make([]complex64, n)
-	for k := 0; k < n; k++ {
+	for k := range n {
 		twiddles[k] = TwiddleFactor32(k, n, direction)
 	}
 	return twiddles

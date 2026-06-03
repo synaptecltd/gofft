@@ -1,6 +1,7 @@
 package algorithm
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -10,7 +11,7 @@ func TestPrimitiveRootFinder(t *testing.T) {
 	primes := []int{3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47}
 
 	for _, p := range primes {
-		t.Run("Prime"+string(rune(p+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Prime %d", p), func(t *testing.T) {
 			g := findPrimitiveRoot(p)
 
 			t.Logf("Prime %d: primitive root = %d", p, g)
@@ -67,7 +68,7 @@ func TestRadersSmallPrimes(t *testing.T) {
 	primes := []int{3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
 
 	for _, p := range primes {
-		t.Run("Prime"+string(rune(p+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Prime %d", p), func(t *testing.T) {
 			// Create Rader's with DFT inner FFT
 			innerFft := NewDft(p-1, Forward)
 			raders := NewRaders(innerFft)
@@ -118,7 +119,7 @@ func TestRadersRoundTrip(t *testing.T) {
 	primes := []int{3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41}
 
 	for _, p := range primes {
-		t.Run("Prime"+string(rune(p+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Prime %d", p), func(t *testing.T) {
 			// Create forward and inverse Rader's
 			fwdInner := NewDft(p-1, Forward)
 			fwd := NewRaders(fwdInner)
@@ -170,7 +171,7 @@ func TestRadersVsBluestein(t *testing.T) {
 	primes := []int{11, 13, 17, 19, 23, 29, 31}
 
 	for _, p := range primes {
-		t.Run("Prime"+string(rune(p+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Prime %d", p), func(t *testing.T) {
 			// Test input
 			input := make([]complex128, p)
 			for i := range input {

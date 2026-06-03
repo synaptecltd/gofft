@@ -49,9 +49,9 @@ func TestRadix4Size32(t *testing.T) {
 
 // Test bit-reversed transpose
 func TestBitReversedTranspose(t *testing.T) {
-	// Test with size 32, baseLen 16
+	// Test with dimensions valid for bitReversedTranspose4: width must be a power of 4.
 	size := 32
-	baseLen := 16
+	baseLen := 8 // width=4
 
 	input := make([]complex128, size)
 	for i := range input {
@@ -65,10 +65,8 @@ func TestBitReversedTranspose(t *testing.T) {
 	t.Logf("Input:  %v", input[:8])
 	t.Logf("Output: %v", output[:8])
 
-	// The transpose should arrange data for radix-4
-	// For baseLen=16, we have 2 rows (size/baseLen = 2)
-	// Bit-reverse of row 0 = 0, bit-reverse of row 1 = 1 (for 1 bit)
-	// So output should be column-major with bit-reversed rows
+	// The transpose should arrange data for radix-4.
+	// For baseLen=8, we have 4 rows (size/baseLen = 4), bit-reversed in base-4 space.
 
 	// Check a few values
 	// Column 0 should have row 0 value (bit-reverse of 0 = 0)
@@ -79,21 +77,28 @@ func TestBitReversedTranspose(t *testing.T) {
 
 // Test twiddle factor computation
 func TestTwiddleFactors(t *testing.T) {
-	// For size 32, baseLen 8 (using Butterfly8), we have one radix-4 layer
-	// That layer has numColumns=8, so we need 8*3 = 24 twiddle factors
-
 	size := 32
 	fft := NewRadix4(size, Forward)
 
-	expectedCount := 8 * 3 // One layer with 8 columns
+	expectedCount := 0
+	crossFftLen := fft.baseLen
+	for crossFftLen < size {
+		expectedCount += crossFftLen * 3
+		crossFftLen *= 4
+	}
+
 	if len(fft.twiddles) != expectedCount {
 		t.Errorf("Expected %d twiddles, got %d", expectedCount, len(fft.twiddles))
 	}
 
-	// Check first few twiddle factors
-	// For k=0, twiddles should be exp(-2πi*k*j/32) for j=1,2,3
+	if expectedCount == 0 {
+		return
+	}
+
+	// Check first few twiddle factors of the first stage.
+	firstStageLen := fft.baseLen * 4
 	for j := 1; j <= 3; j++ {
-		angle := -2.0 * math.Pi * float64(0*j) / float64(size)
+		angle := -2.0 * math.Pi * float64(0*j) / float64(firstStageLen)
 		expected := complex(math.Cos(angle), math.Sin(angle))
 		got := fft.twiddles[j-1]
 		if cmplx.Abs(got-expected) > 1e-10 {

@@ -1,6 +1,7 @@
 package algorithm
 
 import (
+	"fmt"
 	"math/cmplx"
 	"testing"
 )
@@ -10,7 +11,7 @@ func TestPrimeButterflies(t *testing.T) {
 	primes := []int{3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
 
 	for _, n := range primes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create butterfly
 			var bf FftInterface
 			switch n {
@@ -84,7 +85,7 @@ func TestPrimeButterfliesRoundTrip(t *testing.T) {
 	primes := []int{3, 5, 7, 11, 13, 17, 19, 23, 29, 31}
 
 	for _, n := range primes {
-		t.Run("Size"+string(rune(n+'0')), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Size %d", n), func(t *testing.T) {
 			// Create butterflies
 			var fwd, inv FftInterface
 			switch n {

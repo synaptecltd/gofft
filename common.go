@@ -1,42 +1,12 @@
 package gofft
 
 import (
-	"fmt"
 	"math"
 )
 
 // FftNum is a constraint for numeric types that can be used in FFT computations
 type FftNum interface {
 	~float32 | ~float64
-}
-
-// validateBuffers validates buffer sizes for in-place FFT operations
-func validateInplace(bufferLen, expectedLen, scratchLen, expectedScratch int) {
-	if bufferLen < expectedLen {
-		panic(fmt.Sprintf("Provided FFT buffer was too small. Expected len = %d, got len = %d", expectedLen, bufferLen))
-	}
-	if bufferLen%expectedLen != 0 {
-		panic(fmt.Sprintf("Input FFT buffer must be a multiple of FFT length. Expected multiple of %d, got len = %d", expectedLen, bufferLen))
-	}
-	if scratchLen < expectedScratch {
-		panic(fmt.Sprintf("Not enough scratch space was provided. Expected scratch len >= %d, got scratch len = %d", expectedScratch, scratchLen))
-	}
-}
-
-// validateOutOfPlace validates buffer sizes for out-of-place FFT operations
-func validateOutOfPlace(inputLen, outputLen, expectedLen, scratchLen, expectedScratch int) {
-	if inputLen != outputLen {
-		panic(fmt.Sprintf("Provided FFT input buffer and output buffer must have the same length. Got input.len() = %d, output.len() = %d", inputLen, outputLen))
-	}
-	if inputLen < expectedLen {
-		panic(fmt.Sprintf("Provided FFT buffer was too small. Expected len = %d, got len = %d", expectedLen, inputLen))
-	}
-	if inputLen%expectedLen != 0 {
-		panic(fmt.Sprintf("Input FFT buffer must be a multiple of FFT length. Expected multiple of %d, got len = %d", expectedLen, inputLen))
-	}
-	if scratchLen < expectedScratch {
-		panic(fmt.Sprintf("Not enough scratch space was provided. Expected scratch len >= %d, got scratch len = %d", expectedScratch, scratchLen))
-	}
 }
 
 // Complex utility functions for complex128

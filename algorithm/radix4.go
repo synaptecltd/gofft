@@ -94,7 +94,7 @@ func NewRadix4WithBase(k int, baseFft FftInterface) *Radix4 {
 		numColumns := crossFftLen
 		crossFftLen *= rowCount
 
-		for i := 0; i < numColumns; i++ {
+		for i := range numColumns {
 			for k := 1; k < rowCount; k++ {
 				angle := 2.0 * math.Pi * float64(i*k) / float64(crossFftLen)
 				if direction == Forward {
@@ -223,7 +223,7 @@ func (r *Radix4) performCrossFfts(output []complex128) {
 // butterfly4Stage applies a radix-4 butterfly stage
 func butterfly4Stage(data []complex128, twiddles []complex128, numColumns int, butterfly4 *Butterfly4) {
 	// Apply twiddle factors and perform radix-4 butterflies
-	for col := 0; col < numColumns; col++ {
+	for col := range numColumns {
 		// Get the four values for this column
 		idx0 := col
 		idx1 := col + numColumns
@@ -273,19 +273,19 @@ func bitReversedTranspose4(height int, input, output []complex128) {
 		revDigits++
 	}
 
-	for x := 0; x < stridedWidth; x++ {
+	for x := range stridedWidth {
 		// Create forward and reversed indices
 		xFwd := [D]int{}
 		xRev := [D]int{}
 
-		for i := 0; i < D; i++ {
+		for i := range D {
 			xFwd[i] = D*x + i
 			xRev[i] = reverseBitsBaseD(xFwd[i], revDigits, D)
 		}
 
 		// Transpose with bit-reversed columns
-		for y := 0; y < height; y++ {
-			for i := 0; i < D; i++ {
+		for y := range height {
+			for i := range D {
 				inputIndex := xFwd[i] + y*width
 				outputIndex := y + xRev[i]*height
 				output[outputIndex] = input[inputIndex]
@@ -298,7 +298,7 @@ func bitReversedTranspose4(height int, input, output []complex128) {
 // This is like bit reversal but works for any base, not just base 2
 func reverseBitsBaseD(value, revDigits, D int) int {
 	result := 0
-	for i := 0; i < revDigits; i++ {
+	for range revDigits {
 		result = (result * D) + (value % D)
 		value = value / D
 	}
@@ -309,7 +309,7 @@ func reverseBitsBaseD(value, revDigits, D int) int {
 func bitReverseIndex(x, n int) int {
 	bits := trailingZeros(n)
 	result := 0
-	for i := 0; i < bits; i++ {
+	for i := range bits {
 		if x&(1<<i) != 0 {
 			result |= 1 << (bits - 1 - i)
 		}

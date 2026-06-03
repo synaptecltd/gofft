@@ -35,7 +35,7 @@ func basicExample() {
 
 	// Create input signal (simple sine wave)
 	buffer := make([]complex128, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		// Create a sine wave at frequency = 2 cycles over the buffer
 		angle := 2.0 * 2.0 * math.Pi * float64(i) / float64(size)
 		buffer[i] = complex(math.Sin(angle), 0)
@@ -49,7 +49,7 @@ func basicExample() {
 	// Find peak frequency
 	maxMag := 0.0
 	maxIdx := 0
-	for i := 0; i < size; i++ {
+	for i := range size {
 		mag := cmplx.Abs(buffer[i])
 		if mag > maxMag {
 			maxMag = mag
@@ -70,7 +70,7 @@ func roundTripExample() {
 
 	// Create original signal
 	original := make([]complex128, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		original[i] = complex(float64(i), float64(i)*0.5)
 	}
 
@@ -93,7 +93,7 @@ func roundTripExample() {
 
 	// Check accuracy
 	maxError := 0.0
-	for i := 0; i < size; i++ {
+	for i := range size {
 		error := cmplx.Abs(buffer[i] - original[i])
 		if error > maxError {
 			maxError = error
@@ -117,7 +117,7 @@ func frequencyAnalysisExample() {
 
 	// Create a signal with multiple frequency components
 	buffer := make([]complex128, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		t := float64(i) / float64(size)
 
 		// Mix of 3 sine waves at different frequencies
