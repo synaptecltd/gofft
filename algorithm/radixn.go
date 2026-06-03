@@ -216,11 +216,12 @@ func reverseRemainders(value int, factors []TransposeFactor) int {
 // applyCrossFft applies a cross-FFT butterfly with twiddles
 // This performs radix-point butterflies on strided data
 func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int, butterfly FftInterface) {
+	// Reuse buffers across columns to avoid per-iteration allocations.
+	chunk := make([]complex128, radix)
+	scratch := make([]complex128, butterfly.InplaceScratchLen())
+
 	// For each column
 	for col := range columns {
-		// Extract radix elements (strided by columns)
-		chunk := make([]complex128, radix)
-
 		// First element (no twiddle)
 		chunk[0] = data[col]
 
@@ -233,7 +234,6 @@ func applyCrossFft(data []complex128, twiddles []complex128, columns, radix int,
 		}
 
 		// Apply butterfly
-		scratch := make([]complex128, butterfly.InplaceScratchLen())
 		butterfly.ProcessWithScratch(chunk, scratch)
 
 		// Write back
